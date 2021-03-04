@@ -18,7 +18,7 @@ type ConnectionPool interface {
 	ReleaseConnection(*connection)
 }
 
-// NewConnectionPool returns a new ConnectionPool or error
+// NewConnectionPool returns a ConnectionPool or error
 func NewConnectionPool(addr string) (ConnectionPool, error) {
 	cp := &connectionPool{
 		addr: addr,
@@ -39,16 +39,17 @@ type connectionPool struct {
 	length int
 }
 
-// Close in the pool
+// Close all connections in the pool
 func (cp *connectionPool) Close() error {
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
+
 	// TODO confirm if goroutines are executed here
 	// if called in response to SIGTERM/os.Interrupt
 	eg := new(errgroup.Group)
 	next := cp.head
 
-	// TODO prevention of cyclical connections
+	// TODO add a unit test for cyclical connections
 	i := 0
 	for next != nil && i < cp.length {
 		i++
@@ -94,7 +95,7 @@ func (cp *connectionPool) GetConnection() (*connection, error) {
 	return conn, nil
 }
 
-// CloseConnection frees up the connection for reuse
+// ReleaseConnection frees the connection for reuse
 func (cp *connectionPool) ReleaseConnection(conn *connection) {
 	cp.unshift(conn)
 }
@@ -111,7 +112,7 @@ func (cp *connectionPool) closeConnection(conn *connection) error {
 	return nil
 }
 
-// createConnection adds a connection to the pool w/ an open *db.Conn
+// createConnectionAndOpen adds a connection to the pool w/ an open *db.Conn
 func (cp *connectionPool) createConnectionAndOpen() error {
 	cp.length++
 
