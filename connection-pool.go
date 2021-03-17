@@ -32,10 +32,10 @@ func NewConnectionPool(addr string) (ConnectionPool, error) {
 }
 
 type connectionPool struct {
+	mu     sync.RWMutex
 	addr   string
 	head   *connection
 	tail   *connection
-	mu     sync.RWMutex
 	length int
 }
 
